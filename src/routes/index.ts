@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { publicLimiter } from '../middleware/rateLimiter';
 import authRoutes from './auth';
+import categoryRoutes from './categories';
+import serviceRoutes from './services';
+import bookingRoutes from './bookings';
 
 const router = Router();
 
 // Import route modules (will be created in next phases)
 // import userRoutes from './users';
-// import serviceRoutes from './services';
-// import bookingRoutes from './bookings';
-// import categoryRoutes from './categories';
 
 // Apply rate limiting to public routes
 router.use(publicLimiter);
@@ -32,13 +32,6 @@ router.get('/', (_req, res) => {
         logout: 'POST /api/auth/logout',
         refresh: 'POST /api/auth/refresh'
       },
-      users: {
-        list: 'GET /api/users',
-        create: 'POST /api/users',
-        get: 'GET /api/users/:id',
-        update: 'PUT /api/users/:id',
-        delete: 'DELETE /api/users/:id'
-      },
       categories: {
         list: 'GET /api/categories',
         create: 'POST /api/categories',
@@ -51,14 +44,16 @@ router.get('/', (_req, res) => {
         create: 'POST /api/services',
         get: 'GET /api/services/:id',
         update: 'PUT /api/services/:id',
-        delete: 'DELETE /api/services/:id'
+        delete: 'DELETE /api/services/:id',
+        byProvider: 'GET /api/services/provider/:providerId'
       },
       bookings: {
         list: 'GET /api/bookings',
         create: 'POST /api/bookings',
         get: 'GET /api/bookings/:id',
         update: 'PUT /api/bookings/:id',
-        delete: 'DELETE /api/bookings/:id'
+        cancel: 'DELETE /api/bookings/:id',
+        byUser: 'GET /api/bookings/user/:userId'
       }
     },
     authentication: {
@@ -89,11 +84,11 @@ router.get('/health', (_req, res) => {
 
 // Mount route modules (will be uncommented as we create them)
 // router.use('/users', userRoutes);
-// router.use('/services', serviceRoutes);
-// router.use('/bookings', bookingRoutes);
-// router.use('/categories', categoryRoutes);
 
-// Mount authentication routes
+// Mount all route modules
 router.use('/auth', authRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/services', serviceRoutes);
+router.use('/bookings', bookingRoutes);
 
 export default router; 

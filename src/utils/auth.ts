@@ -9,7 +9,7 @@ import { JWTPayload, IUser } from '../types';
  */
 export const generateToken = (user: IUser): string => {
   const payload: JWTPayload = {
-    userId: user._id.toString(),
+    userId: user._id ? user._id.toString() : '',
     email: user.email,
     role: user.role,
     iat: Math.floor(Date.now() / 1000),

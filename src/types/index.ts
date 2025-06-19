@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Document, ObjectId } from 'mongoose';
+import { ObjectId } from 'mongoose';
 
 // Environment types
 export interface Environment {
@@ -15,8 +15,8 @@ export interface Environment {
 }
 
 // User types
-export interface IUser extends Document {
-  _id: ObjectId;
+export interface IUser {
+  _id?: ObjectId;
   email: string;
   password: string;
   firstName: string;
@@ -36,8 +36,8 @@ export interface IUserInput {
 }
 
 // Service types
-export interface IService extends Document {
-  _id: ObjectId;
+export interface IService {
+  _id?: ObjectId;
   name: string;
   description?: string;
   category: ObjectId;
@@ -64,8 +64,8 @@ export interface IServiceInput {
 // Booking types
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
-export interface IBooking extends Document {
-  _id: ObjectId;
+export interface IBooking {
+  _id?: ObjectId;
   user: ObjectId;
   service: ObjectId;
   date: Date;
@@ -84,8 +84,8 @@ export interface IBookingInput {
 }
 
 // Category types
-export interface ICategory extends Document {
-  _id: ObjectId;
+export interface ICategory {
+  _id?: ObjectId;
   name: string;
   description?: string;
   createdAt?: Date;
