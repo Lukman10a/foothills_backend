@@ -5,46 +5,110 @@ import { successResponse, createdResponse } from '../utils/responseFormatter';
 import Service from '../models/Service';
 import Category from '../models/Category';
 import { AppError } from '../middleware/errorHandler';
+import { 
+  buildSearchQuery, 
+  buildFilterQuery, 
+  buildSortQuery, 
+  buildPaginationOptions, 
+  createPaginatedResponse,
+  sanitizeSearchInput 
+} from '../utils/searchUtils';
 
 /**
- * Get all services with optional filtering
+ * Get all services with advanced search, filtering, and sorting
  * GET /api/services
  */
 export const getAllServices = asyncHandler(async (req: Request, res: Response) => {
-  const { category, provider, page = 1, limit = 10 } = req.query;
-  
-  const filter: any = {};
-  
-  if (category) {
-    filter.category = category;
-  }
-  
-  if (provider) {
-    filter.provider = provider;
-  }
-  
-  const skip = (Number(page) - 1) * Number(limit);
-  
-  const services = await Service.find(filter)
-    .populate('category', 'name')
-    .populate('provider', 'firstName lastName email')
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit));
-  
-  const total = await Service.countDocuments(filter);
-  
-  const response = {
-    services,
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / Number(limit))
-    }
-  };
-  
-  res.status(200).json(successResponse(response, 'Services retrieved successfully'));
+  const { 
+    search, 
+    sort = 'createdAt',
+    order = 'desc'
+  } = req.query;
+
+  // Build search query
+  const searchFields = ['name', 'description'];
+  const searchQuery = search ? buildSearchQuery(sanitizeSearchInput(search as string), searchFields) : {};
+
+  // Build filter query
+  const allowedFilters = ['category', 'provider', 'price'];
+  const filterQuery = buildFilterQuery(req.query, allowedFilters);
+
+  // Combine search and filter queries
+  const combinedFilter = { ...searchQuery, ...filterQuery };
+
+  // Build sort query
+  const allowedSortFields = ['name', 'price', 'createdAt', 'updatedAt'];
+  const sortQuery = buildSortQuery(
+    { sort: `${order === 'desc' ? '-' : ''}${sort}` },
+    { createdAt: -1 },
+    allowedSortFields
+  );
+
+  // Build pagination options
+  const { page: pageNum, limit: limitNum, skip } = buildPaginationOptions(req.query, 10, 100);
+
+  // Execute query with aggregation for better performance
+  const pipeline = [
+    { $match: combinedFilter },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: 'category',
+        foreignField: '_id',
+        as: 'category'
+      }
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'provider',
+        foreignField: '_id',
+        as: 'provider'
+      }
+    },
+    {
+      $unwind: {
+        path: '$category',
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $unwind: {
+        path: '$provider',
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        price: 1,
+        duration: 1,
+        isActive: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        'category._id': 1,
+        'category.name': 1,
+        'category.description': 1,
+        'provider._id': 1,
+        'provider.firstName': 1,
+        'provider.lastName': 1,
+        'provider.email': 1
+      }
+    },
+    { $sort: sortQuery },
+    { $skip: skip },
+    { $limit: limitNum }
+  ];
+
+  // Execute aggregation
+  const services = await Service.aggregate(pipeline);
+  const total = await Service.countDocuments(combinedFilter);
+
+  // Create paginated response
+  const paginatedResponse = createPaginatedResponse(services, total, pageNum, limitNum);
+
+  res.status(200).json(successResponse(paginatedResponse, 'Services retrieved successfully'));
 });
 
 /**

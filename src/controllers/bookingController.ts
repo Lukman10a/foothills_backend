@@ -1,10 +1,10 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types';
 import { asyncHandler } from '../middleware/errorHandler';
-import { successResponse, createdResponse } from '../utils/responseFormatter';
+import { successResponse } from '../utils/responseFormatter';
 import Booking from '../models/Booking';
-import Service from '../models/Service';
 import { AppError } from '../middleware/errorHandler';
+import { validateBookingRequest, updateBookingStatus as updateBookingStatusUtil } from '../utils/bookingUtils';
 
 /**
  * Get all bookings with optional filtering
@@ -99,56 +99,27 @@ export const getBookingById = asyncHandler(async (req: AuthRequest, res: Respons
  * POST /api/bookings
  */
 export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { service, date, notes } = req.body;
-  
-  if (!req.user) {
-    throw new AppError('Authentication required', 401);
+  const { serviceId, date, notes } = req.body;
+  const userId = req.user?._id;
+
+  if (!userId) {
+    throw new AppError('User not authenticated', 401);
   }
-  
-  // Verify service exists
-  const serviceExists = await Service.findById(service);
-  if (!serviceExists) {
-    throw new AppError('Service not found', 404);
-  }
-  
-  // Check if booking date is in the future
-  const bookingDate = new Date(date);
-  const now = new Date();
-  if (bookingDate <= now) {
-    throw new AppError('Booking date must be in the future', 400);
-  }
-  
-  // TODO: Check for booking conflicts (same service, same date/time)
-  // const conflictingBooking = await Booking.findOne({
-  //   service,
-  //   date: {
-  //     $gte: new Date(bookingDate.getTime() - 60 * 60 * 1000), // 1 hour before
-  //     $lte: new Date(bookingDate.getTime() + 60 * 60 * 1000)  // 1 hour after
-  //   },
-  //   status: { $in: ['pending', 'confirmed'] }
-  // });
-  // if (conflictingBooking) {
-  //   throw new AppError('This time slot is already booked', 400);
-  // }
-  
+
+  // Validate booking request using business logic
+  await validateBookingRequest(serviceId, new Date(date), userId.toString());
+
   const booking = await Booking.create({
-    user: req.user._id,
-    service,
-    date: bookingDate,
-    notes
+    user: userId,
+    service: serviceId,
+    date: new Date(date),
+    notes,
+    status: 'pending'
   });
-  
-  const populatedBooking = await Booking.findById(booking._id)
-    .populate('user', 'firstName lastName email')
-    .populate({
-      path: 'service',
-      populate: [
-        { path: 'category', select: 'name' },
-        { path: 'provider', select: 'firstName lastName email' }
-      ]
-    });
-  
-  res.status(201).json(createdResponse(populatedBooking, 'Booking created successfully'));
+
+  await booking.populate(['user', 'service']);
+
+  res.status(201).json(successResponse(booking, 'Booking created successfully'));
 });
 
 /**
@@ -156,46 +127,48 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
  * PUT /api/bookings/:id
  */
 export const updateBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { status, notes } = req.body;
-  
-  if (!req.user) {
-    throw new AppError('Authentication required', 401);
+  const { date, notes, status } = req.body;
+  const bookingId = req.params['id'];
+  const userId = req.user?._id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    throw new AppError('User not authenticated', 401);
   }
-  
-  // Check if booking exists
-  const booking = await Booking.findById(req.params['id']);
+
+  const booking = await Booking.findById(bookingId)
+    .populate(['user', 'service']);
+
   if (!booking) {
     throw new AppError('Booking not found', 404);
   }
-  
-  // Check if user can update this booking
-  const canUpdate = req.user.role === 'admin' || 
-                   (!!req.user._id && booking.user.toString() === req.user._id.toString()) ||
-                   (req.user.role === 'provider' && !!req.user._id && booking.service.toString() === req.user._id.toString());
-  
-  if (!canUpdate) {
+
+  // Check authorization
+  if (req.user && req.user.role !== 'admin' && req.user._id && booking.user.toString() !== req.user._id.toString()) {
     throw new AppError('Not authorized to update this booking', 403);
   }
-  
-  // Update booking
-  const updateData: any = {};
-  if (status) updateData.status = status;
-  if (notes) updateData.notes = notes;
-  
+
+  // If status is being updated, validate the transition
+  if (status && status !== booking.status && userId) {
+    await updateBookingStatusUtil(bookingId, status, userId, (userRole as string) || 'customer');
+  }
+
+  // If date is being updated, validate availability
+  if (date && new Date(date).getTime() !== booking.date.getTime()) {
+    await validateBookingRequest(booking.service, new Date(date), booking.user.toString(), 60);
+  }
+
   const updatedBooking = await Booking.findByIdAndUpdate(
-    req.params['id'],
-    updateData,
+    bookingId,
+    {
+      ...(date && { date: new Date(date) }),
+      ...(notes !== undefined && { notes }),
+      ...(status && { status })
+    },
     { new: true, runValidators: true }
-  ).populate('user', 'firstName lastName email')
-   .populate({
-     path: 'service',
-     populate: [
-       { path: 'category', select: 'name' },
-       { path: 'provider', select: 'firstName lastName email' }
-     ]
-   });
-  
-  res.status(200).json(successResponse(updatedBooking, 'Booking updated successfully'));
+  ).populate(['user', 'service']);
+
+  res.json(successResponse(updatedBooking, 'Booking updated successfully'));
 });
 
 /**
@@ -290,4 +263,28 @@ export const getBookingsByUser = asyncHandler(async (req: AuthRequest, res: Resp
   };
   
   res.status(200).json(successResponse(response, 'User bookings retrieved successfully'));
+});
+
+export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { status } = req.body;
+  const bookingId = req.params['id'];
+  const userId = req.user?._id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    throw new AppError('User not authenticated', 401);
+  }
+
+  // Validate status transition using business logic
+  if (userId) {
+    await updateBookingStatusUtil(bookingId, status, userId, (userRole as string) || 'customer');
+  }
+
+  const updatedBooking = await Booking.findByIdAndUpdate(
+    bookingId,
+    { status },
+    { new: true, runValidators: true }
+  ).populate(['user', 'service']);
+
+  res.json(successResponse(updatedBooking, 'Booking status updated successfully'));
 }); 

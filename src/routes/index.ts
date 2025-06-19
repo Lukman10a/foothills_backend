@@ -4,6 +4,7 @@ import authRoutes from './auth';
 import categoryRoutes from './categories';
 import serviceRoutes from './services';
 import bookingRoutes from './bookings';
+import statisticsRoutes from './statistics';
 
 const router = Router();
 
@@ -54,6 +55,13 @@ router.get('/', (_req, res) => {
         update: 'PUT /api/bookings/:id',
         cancel: 'DELETE /api/bookings/:id',
         byUser: 'GET /api/bookings/user/:userId'
+      },
+      statistics: {
+        dashboard: 'GET /api/statistics/dashboard',
+        trends: 'GET /api/statistics/trends',
+        services: 'GET /api/statistics/services',
+        categories: 'GET /api/statistics/categories',
+        users: 'GET /api/statistics/users'
       }
     },
     authentication: {
@@ -63,6 +71,12 @@ router.get('/', (_req, res) => {
     rate_limiting: {
       window: '15 minutes',
       max_requests: '100 requests per window'
+    },
+    advanced_features: {
+      search: 'Use ?search=term for text search',
+      filtering: 'Use ?category=id&provider=id&priceMin=100&priceMax=500',
+      sorting: 'Use ?sort=field&order=asc|desc',
+      pagination: 'Use ?page=1&limit=10'
     }
   });
 });
@@ -90,5 +104,6 @@ router.use('/auth', authRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/services', serviceRoutes);
 router.use('/bookings', bookingRoutes);
+router.use('/statistics', statisticsRoutes);
 
 export default router; 
