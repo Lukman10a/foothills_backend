@@ -8,6 +8,7 @@ import connectDB from './config/database';
 import { env } from './config/environment';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { generalLimiter } from './middleware/rateLimiter';
+import { setupSwagger } from './docs/swagger';
 
 // Import routes
 import apiRoutes from './routes';
@@ -38,6 +39,9 @@ app.use(express.urlencoded({ extended: true }));
 // Rate limiting
 app.use(generalLimiter);
 
+// Setup Swagger documentation
+setupSwagger(app);
+
 // Request logging middleware (development only)
 if (env.NODE_ENV === 'development') {
   app.use((_req, _res, next) => {
@@ -58,6 +62,7 @@ app.get('/', (_req, res) => {
     status: 'operational',
     environment: env.NODE_ENV,
     documentation: '/api',
+    swagger: '/api-docs',
     health: '/api/health'
   });
 });
@@ -75,6 +80,7 @@ if (require.main === module) {
     console.log(`🚀 Foothills API server running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📚 API docs: http://localhost:${PORT}/api`);
+    console.log(`🔍 Swagger docs: http://localhost:${PORT}/api-docs`);
     console.log(`🌍 Environment: ${env.NODE_ENV}`);
     console.log(`🔗 CORS Origin: ${env.CORS_ORIGIN}`);
   });

@@ -168,13 +168,11 @@ export const createPaginatedResponse = <T>(
  * Build aggregation pipeline for advanced search
  * @param options - Search options
  * @param searchFields - Fields to search in
- * @param allowedFilters - Allowed filter fields
  * @returns Aggregation pipeline
  */
 export const buildSearchPipeline = (
   options: SearchOptions,
-  searchFields: string[],
-  allowedFilters: string[]
+  searchFields: string[]
 ) => {
   const pipeline: any[] = [];
 
