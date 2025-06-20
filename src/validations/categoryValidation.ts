@@ -19,6 +19,13 @@ export const categorySchema = Joi.object({
     .optional()
     .messages({
       'string.max': 'Description cannot exceed 500 characters'
+    }),
+  
+  isActive: Joi.boolean()
+    .optional()
+    .default(true)
+    .messages({
+      'boolean.base': 'isActive must be a boolean value'
     })
 });
 
@@ -40,6 +47,12 @@ export const categoryUpdateSchema = Joi.object({
     .optional()
     .messages({
       'string.max': 'Description cannot exceed 500 characters'
+    }),
+  
+  isActive: Joi.boolean()
+    .optional()
+    .messages({
+      'boolean.base': 'isActive must be a boolean value'
     })
 });
 
