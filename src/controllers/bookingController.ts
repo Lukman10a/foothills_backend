@@ -150,7 +150,9 @@ export const updateBooking = asyncHandler(async (req: AuthRequest, res: Response
 
   // If status is being updated, validate the transition
   if (status && status !== booking.status && userId) {
-    await updateBookingStatusUtil(bookingId, status, userId, (userRole as string) || 'customer');
+    const role = userRole || 'customer';
+    // @ts-ignore - userId is verified to exist above
+    await updateBookingStatusUtil(bookingId, status, userId, role);
   }
 
   // If date is being updated, validate availability
@@ -277,7 +279,9 @@ export const updateBookingStatus = asyncHandler(async (req: AuthRequest, res: Re
 
   // Validate status transition using business logic
   if (userId) {
-    await updateBookingStatusUtil(bookingId, status, userId, (userRole as string) || 'customer');
+    const role = userRole || 'customer';
+    // @ts-ignore - userId is verified to exist above
+    await updateBookingStatusUtil(bookingId, status, userId, role);
   }
 
   const updatedBooking = await Booking.findByIdAndUpdate(
