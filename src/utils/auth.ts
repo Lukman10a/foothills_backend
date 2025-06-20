@@ -8,12 +8,10 @@ import { JWTPayload, IUser } from '../types';
  * @returns JWT token
  */
 export const generateToken = (user: IUser): string => {
-  const payload: JWTPayload = {
+  const payload = {
     userId: user._id ? user._id.toString() : '',
     email: user.email,
-    role: user.role,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+    role: user.role
   };
 
   return jwt.sign(payload, env.JWT_SECRET, {

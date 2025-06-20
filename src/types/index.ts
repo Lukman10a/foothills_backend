@@ -157,4 +157,6 @@ export interface DatabaseConfig {
   maxPoolSize: number;
   serverSelectionTimeoutMS: number;
   socketTimeoutMS: number;
+  family?: number;
+  bufferCommands?: boolean;
 } 
