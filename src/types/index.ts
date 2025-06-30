@@ -22,6 +22,8 @@ export interface IUser {
   firstName: string;
   lastName: string;
   role: 'customer' | 'admin' | 'provider';
+  isActive?: boolean;
+  deletedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -33,6 +35,7 @@ export interface IUserInput {
   firstName: string;
   lastName: string;
   role?: 'customer' | 'admin' | 'provider';
+  isActive?: boolean;
 }
 
 // Service types
@@ -43,6 +46,22 @@ export interface IService {
   category: ObjectId;
   price: number;
   provider: ObjectId;
+  // Enhanced hospitality fields
+  propertyType?: 'apartment' | 'house' | 'condo' | 'villa' | 'studio' | 'loft' | 'other';
+  bedrooms?: number;
+  bathrooms?: number;
+  maxGuests?: number;
+  amenities?: string[];
+  images?: string[];
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  unavailableDates?: Date[];
+  isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -52,12 +71,21 @@ export interface IServiceInput {
   description: string;
   category: string;
   price: number;
-  duration: number;
-  availability: Array<{
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-  }>;
+  // Enhanced hospitality fields
+  propertyType?: 'apartment' | 'house' | 'condo' | 'villa' | 'studio' | 'loft' | 'other';
+  bedrooms?: number;
+  bathrooms?: number;
+  maxGuests?: number;
+  amenities?: string[];
+  images?: string[];
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  unavailableDates?: Date[];
   isActive?: boolean;
 }
 

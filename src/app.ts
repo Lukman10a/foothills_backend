@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Import configurations and middleware
 import connectDB from './config/database';
@@ -35,6 +36,9 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Static file serving for uploaded images
+app.use('/api/images', express.static(path.join(process.cwd(), 'uploads', 'images')));
 
 // Rate limiting
 app.use(generalLimiter);

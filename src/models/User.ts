@@ -37,6 +37,14 @@ const userSchema = new Schema<IUserDocument>({
     type: String,
     enum: ['customer', 'admin', 'provider'],
     default: 'customer'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true,

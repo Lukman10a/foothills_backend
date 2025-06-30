@@ -5,11 +5,9 @@ import categoryRoutes from './categories';
 import serviceRoutes from './services';
 import bookingRoutes from './bookings';
 import statisticsRoutes from './statistics';
+import userRoutes from './users';
 
 const router = Router();
-
-// Import route modules (will be created in next phases)
-// import userRoutes from './users';
 
 // Apply rate limiting to public routes
 router.use(publicLimiter);
@@ -62,6 +60,16 @@ router.get('/', (_req, res) => {
         services: 'GET /api/statistics/services',
         categories: 'GET /api/statistics/categories',
         users: 'GET /api/statistics/users'
+      },
+      admin_users: {
+        list: 'GET /api/admin/users',
+        create: 'POST /api/admin/users',
+        get: 'GET /api/admin/users/:id',
+        update: 'PUT /api/admin/users/:id',
+        updateRole: 'PATCH /api/admin/users/:id/role',
+        updateStatus: 'PATCH /api/admin/users/:id/status',
+        delete: 'DELETE /api/admin/users/:id',
+        statistics: 'GET /api/admin/users/statistics'
       }
     },
     authentication: {
@@ -96,14 +104,12 @@ router.get('/health', (_req, res) => {
   });
 });
 
-// Mount route modules (will be uncommented as we create them)
-// router.use('/users', userRoutes);
-
 // Mount all route modules
 router.use('/auth', authRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/services', serviceRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/statistics', statisticsRoutes);
+router.use('/admin/users', userRoutes);
 
 export default router; 
