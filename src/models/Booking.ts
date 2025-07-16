@@ -6,6 +6,8 @@ export interface IBooking extends Document {
   user: Types.ObjectId;
   service: Types.ObjectId;
   date: Date;
+  endDate?: Date; // For inventory bookings with date ranges
+  units?: number; // Number of units booked (for inventory support)
   status: BookingStatus;
   notes?: string;
   createdAt: Date;
@@ -27,6 +29,16 @@ const bookingSchema = new Schema<IBooking>({
     type: Date,
     required: [true, 'Booking date is required']
   },
+  endDate: {
+    type: Date,
+    required: false
+  },
+  units: {
+    type: Number,
+    min: [1, 'At least 1 unit required'],
+    max: [100, 'Maximum 100 units allowed'],
+    default: 1
+  },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
@@ -45,6 +57,8 @@ const bookingSchema = new Schema<IBooking>({
 bookingSchema.index({ user: 1 });
 bookingSchema.index({ service: 1 });
 bookingSchema.index({ date: 1 });
+bookingSchema.index({ endDate: 1 });
+bookingSchema.index({ status: 1 });
 
 const Booking = mongoose.model<IBooking>('Booking', bookingSchema);
 

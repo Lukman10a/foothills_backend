@@ -929,3 +929,192 @@ export const setPrimaryImage = asyncHandler(async (req: AuthRequest, res: Respon
     totalImages: service.images.length
   }, 'Primary image set successfully'));
 }); 
+
+/**
+ * Update property inventory
+ * PUT /api/services/:id/inventory
+ */
+export const updateInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { totalUnits, availableUnits, minBookingDays, maxBookingDays } = req.body;
+
+  if (!req.user) {
+    throw new AppError('Authentication required', 401);
+  }
+
+  // Find the service/property
+  const service = await Service.findById(id);
+  if (!service) {
+    throw new AppError('Property not found', 404);
+  }
+
+  // Check authorization (only property owner or admin can update inventory)
+  if (req.user.role !== 'admin' && service.provider.toString() !== req.user._id?.toString()) {
+    throw new AppError('Not authorized to update this property inventory', 403);
+  }
+
+  // Validate inventory data
+  if (availableUnits > totalUnits) {
+    throw new AppError('Available units cannot exceed total units', 400);
+  }
+
+  if (minBookingDays > maxBookingDays) {
+    throw new AppError('Minimum booking days cannot exceed maximum booking days', 400);
+  }
+
+  // Update inventory
+  const updatedService = await Service.findByIdAndUpdate(
+    id,
+    {
+      inventory: {
+        totalUnits,
+        availableUnits,
+        minBookingDays,
+        maxBookingDays
+      }
+    },
+    { new: true, runValidators: true }
+  ).populate('category', 'name description')
+   .populate('provider', 'firstName lastName email');
+
+  res.status(200).json(successResponse(updatedService, 'Property inventory updated successfully'));
+});
+
+/**
+ * Get property inventory statistics
+ * GET /api/services/:id/inventory/stats
+ */
+export const getInventoryStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!req.user) {
+    throw new AppError('Authentication required', 401);
+  }
+
+  // Find the service/property
+  const service = await Service.findById(id);
+  if (!service) {
+    throw new AppError('Property not found', 404);
+  }
+
+  // Check authorization (only property owner or admin can view inventory stats)
+  if (req.user.role !== 'admin' && service.provider.toString() !== req.user._id?.toString()) {
+    throw new AppError('Not authorized to view this property inventory', 403);
+  }
+
+  // Import inventory utilities
+  const { getInventoryStatistics } = await import('../utils/inventoryUtils');
+  
+  // Get inventory statistics
+  const stats = await getInventoryStatistics(id!);
+
+  res.status(200).json(successResponse(stats, 'Inventory statistics retrieved successfully'));
+});
+
+/**
+ * Check inventory availability for a date range
+ * POST /api/services/:id/inventory/availability
+ */
+export const checkInventoryAvailability = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { startDate, endDate, units = 1 } = req.body;
+
+  // Find the service/property
+  const service = await Service.findById(id);
+  if (!service) {
+    throw new AppError('Property not found', 404);
+  }
+
+  if (!service.inventory) {
+    throw new AppError('Property inventory not configured', 400);
+  }
+
+  // Import inventory utilities
+  const { checkInventoryAvailability: checkAvailability } = await import('../utils/inventoryUtils');
+  
+  // Check availability
+  const availability = await checkAvailability(id!, new Date(startDate), new Date(endDate), units);
+
+  res.status(200).json(successResponse(availability, 'Inventory availability checked successfully'));
+});
+
+/**
+ * Adjust property inventory (for admin use)
+ * PATCH /api/services/:id/inventory/adjust
+ */
+export const adjustInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { adjustment, reason } = req.body;
+
+  if (!req.user) {
+    throw new AppError('Authentication required', 401);
+  }
+
+  // Only admins can adjust inventory
+  if (req.user.role !== 'admin') {
+    throw new AppError('Only administrators can adjust inventory', 403);
+  }
+
+  // Find the service/property
+  const service = await Service.findById(id);
+  if (!service) {
+    throw new AppError('Property not found', 404);
+  }
+
+  if (!service.inventory) {
+    throw new AppError('Property inventory not configured', 400);
+  }
+
+  // Calculate new available units
+  const newAvailableUnits = Math.max(0, Math.min(
+    service.inventory.totalUnits,
+    service.inventory.availableUnits + adjustment
+  ));
+
+  // Update inventory
+  const updatedService = await Service.findByIdAndUpdate(
+    id,
+    {
+      'inventory.availableUnits': newAvailableUnits
+    },
+    { new: true, runValidators: true }
+  ).populate('category', 'name description')
+   .populate('provider', 'firstName lastName email');
+
+  res.status(200).json(successResponse({
+    service: updatedService,
+    adjustment,
+    reason,
+    previousAvailableUnits: service.inventory.availableUnits,
+    newAvailableUnits
+  }, 'Inventory adjusted successfully'));
+});
+
+/**
+ * Bulk update inventory for multiple properties (admin only)
+ * POST /api/services/inventory/bulk-update
+ */
+export const bulkUpdateInventory = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { updates } = req.body;
+
+  if (!req.user) {
+    throw new AppError('Authentication required', 401);
+  }
+
+  // Only admins can perform bulk updates
+  if (req.user.role !== 'admin') {
+    throw new AppError('Only administrators can perform bulk inventory updates', 403);
+  }
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    throw new AppError('Updates array is required and cannot be empty', 400);
+  }
+
+  // Import inventory utilities
+  const { bulkUpdateInventory: bulkUpdate } = await import('../utils/inventoryUtils');
+  
+  // Perform bulk update
+  const result = await bulkUpdate(updates);
+
+  res.status(200).json(successResponse(result, 'Bulk inventory update completed'));
+}); 

@@ -3,13 +3,20 @@ import {
   getAllBookings,
   getBookingById,
   createBooking,
+  createInventoryBooking,
   updateBooking,
   cancelBooking,
   getBookingsByUser
 } from '../controllers/bookingController';
 import { authenticate } from '../middleware/auth';
 import { validateRequest, validateParams, validateQuery } from '../middleware/validation';
-import { bookingSchema, bookingUpdateSchema, bookingIdSchema, bookingQuerySchema } from '../validations/bookingValidation';
+import { 
+  bookingSchema, 
+  bookingWithInventorySchema,
+  bookingUpdateSchema, 
+  bookingIdSchema, 
+  bookingQuerySchema 
+} from '../validations/bookingValidation';
 
 const router = Router();
 
@@ -36,10 +43,17 @@ router.get('/user/:userId', authenticate, validateParams(bookingIdSchema), valid
 
 /**
  * @route   POST /api/bookings
- * @desc    Create new booking
+ * @desc    Create new booking (legacy - single date)
  * @access  Private
  */
 router.post('/', authenticate, validateRequest(bookingSchema), createBooking);
+
+/**
+ * @route   POST /api/bookings/inventory
+ * @desc    Create new booking with inventory support (date range)
+ * @access  Private
+ */
+router.post('/inventory', authenticate, validateRequest(bookingWithInventorySchema), createInventoryBooking);
 
 /**
  * @route   PUT /api/bookings/:id

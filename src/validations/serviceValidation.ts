@@ -105,6 +105,42 @@ export const serviceSchema = Joi.object({
       'date.base': 'Each unavailable date must be a valid date'
     }),
 
+  // Inventory management fields
+  inventory: Joi.object({
+    totalUnits: Joi.number()
+      .min(1)
+      .max(100)
+      .default(1)
+      .messages({
+        'number.min': 'Total units must be at least 1',
+        'number.max': 'Maximum 100 units allowed'
+      }),
+    availableUnits: Joi.number()
+      .min(0)
+      .max(100)
+      .default(1)
+      .messages({
+        'number.min': 'Available units cannot be negative',
+        'number.max': 'Maximum 100 units allowed'
+      }),
+    minBookingDays: Joi.number()
+      .min(1)
+      .max(365)
+      .default(1)
+      .messages({
+        'number.min': 'Minimum booking days must be at least 1',
+        'number.max': 'Maximum 365 days allowed'
+      }),
+    maxBookingDays: Joi.number()
+      .min(1)
+      .max(365)
+      .default(30)
+      .messages({
+        'number.min': 'Maximum booking days must be at least 1',
+        'number.max': 'Maximum 365 days allowed'
+      })
+  }).optional(),
+
   isActive: Joi.boolean()
     .optional()
     .default(true)
@@ -211,6 +247,42 @@ export const serviceUpdateSchema = Joi.object({
     .messages({
       'date.base': 'Each unavailable date must be a valid date'
     }),
+
+  // Inventory management fields
+  inventory: Joi.object({
+    totalUnits: Joi.number()
+      .min(1)
+      .max(100)
+      .optional()
+      .messages({
+        'number.min': 'Total units must be at least 1',
+        'number.max': 'Maximum 100 units allowed'
+      }),
+    availableUnits: Joi.number()
+      .min(0)
+      .max(100)
+      .optional()
+      .messages({
+        'number.min': 'Available units cannot be negative',
+        'number.max': 'Maximum 100 units allowed'
+      }),
+    minBookingDays: Joi.number()
+      .min(1)
+      .max(365)
+      .optional()
+      .messages({
+        'number.min': 'Minimum booking days must be at least 1',
+        'number.max': 'Maximum 365 days allowed'
+      }),
+    maxBookingDays: Joi.number()
+      .min(1)
+      .max(365)
+      .optional()
+      .messages({
+        'number.min': 'Maximum booking days must be at least 1',
+        'number.max': 'Maximum 365 days allowed'
+      })
+  }).optional(),
 
   isActive: Joi.boolean()
     .optional()
@@ -438,5 +510,116 @@ export const setPrimaryImageSchema = Joi.object({
       'string.base': 'Image URL must be a string',
       'string.uri': 'Image URL must be a valid URL',
       'any.required': 'Image URL is required'
+    })
+}); 
+
+/**
+ * Validation schema for inventory management
+ */
+export const inventoryUpdateSchema = Joi.object({
+  totalUnits: Joi.number()
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      'number.min': 'Total units must be at least 1',
+      'number.max': 'Maximum 100 units allowed',
+      'any.required': 'Total units is required'
+    }),
+  availableUnits: Joi.number()
+    .min(0)
+    .max(100)
+    .required()
+    .messages({
+      'number.min': 'Available units cannot be negative',
+      'number.max': 'Maximum 100 units allowed',
+      'any.required': 'Available units is required'
+    }),
+  minBookingDays: Joi.number()
+    .min(1)
+    .max(365)
+    .required()
+    .messages({
+      'number.min': 'Minimum booking days must be at least 1',
+      'number.max': 'Maximum 365 days allowed',
+      'any.required': 'Minimum booking days is required'
+    }),
+  maxBookingDays: Joi.number()
+    .min(1)
+    .max(365)
+    .required()
+    .messages({
+      'number.min': 'Maximum booking days must be at least 1',
+      'number.max': 'Maximum 365 days allowed',
+      'any.required': 'Maximum booking days is required'
+    })
+}).custom((value, helpers) => {
+  // Custom validation: availableUnits cannot exceed totalUnits
+  if (value.availableUnits > value.totalUnits) {
+    return helpers.error('any.invalid', { 
+      message: 'Available units cannot exceed total units' 
+    });
+  }
+  
+  // Custom validation: minBookingDays cannot exceed maxBookingDays
+  if (value.minBookingDays > value.maxBookingDays) {
+    return helpers.error('any.invalid', { 
+      message: 'Minimum booking days cannot exceed maximum booking days' 
+    });
+  }
+  
+  return value;
+});
+
+/**
+ * Validation schema for inventory adjustment
+ */
+export const inventoryAdjustmentSchema = Joi.object({
+  adjustment: Joi.number()
+    .integer()
+    .required()
+    .messages({
+      'number.base': 'Adjustment must be a number',
+      'number.integer': 'Adjustment must be a whole number',
+      'any.required': 'Adjustment amount is required'
+    }),
+  reason: Joi.string()
+    .max(200)
+    .optional()
+    .messages({
+      'string.max': 'Reason cannot exceed 200 characters'
+    })
+});
+
+/**
+ * Validation schema for inventory availability check
+ */
+export const inventoryAvailabilitySchema = Joi.object({
+  startDate: Joi.date()
+    .greater('now')
+    .required()
+    .messages({
+      'date.base': 'Start date must be a valid date',
+      'date.greater': 'Start date must be in the future',
+      'any.required': 'Start date is required'
+    }),
+  endDate: Joi.date()
+    .greater(Joi.ref('startDate'))
+    .required()
+    .messages({
+      'date.base': 'End date must be a valid date',
+      'date.greater': 'End date must be after start date',
+      'any.required': 'End date is required'
+    }),
+  units: Joi.number()
+    .integer()
+    .min(1)
+    .max(100)
+    .default(1)
+    .messages({
+      'number.base': 'Units must be a number',
+      'number.integer': 'Units must be a whole number',
+      'number.min': 'At least 1 unit required',
+      'number.max': 'Maximum 100 units allowed'
     })
 }); 

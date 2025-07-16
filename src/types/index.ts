@@ -61,6 +61,13 @@ export interface IService {
     country?: string;
   };
   unavailableDates?: Date[];
+  // Inventory management fields
+  inventory?: {
+    totalUnits: number;
+    availableUnits: number;
+    minBookingDays: number;
+    maxBookingDays: number;
+  };
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -86,6 +93,13 @@ export interface IServiceInput {
     country?: string;
   };
   unavailableDates?: Date[];
+  // Inventory management fields
+  inventory?: {
+    totalUnits: number;
+    availableUnits: number;
+    minBookingDays: number;
+    maxBookingDays: number;
+  };
   isActive?: boolean;
 }
 
@@ -97,6 +111,8 @@ export interface IBooking {
   user: ObjectId;
   service: ObjectId;
   date: Date;
+  endDate?: Date; // For inventory bookings with date ranges
+  units?: number; // Number of units booked (for inventory support)
   status: BookingStatus;
   notes?: string;
   createdAt?: Date;
@@ -108,6 +124,14 @@ export interface IBookingInput {
   date: Date;
   startTime: string;
   endTime: string;
+  notes?: string;
+}
+
+export interface IInventoryBookingInput {
+  serviceId: string;
+  startDate: Date;
+  endDate: Date;
+  units?: number;
   notes?: string;
 }
 

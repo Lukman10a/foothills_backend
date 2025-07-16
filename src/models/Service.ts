@@ -21,6 +21,13 @@ export interface IService extends Document {
     country?: string;
   };
   unavailableDates?: Date[];
+  // Inventory management fields
+  inventory?: {
+    totalUnits: number;
+    availableUnits: number;
+    minBookingDays: number;
+    maxBookingDays: number;
+  };
   isActive?: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -112,6 +119,33 @@ const serviceSchema = new Schema<IService>({
   unavailableDates: [{
     type: Date
   }],
+  // Inventory management fields
+  inventory: {
+    totalUnits: {
+      type: Number,
+      min: [1, 'Total units must be at least 1'],
+      max: [100, 'Maximum 100 units allowed'],
+      default: 1
+    },
+    availableUnits: {
+      type: Number,
+      min: [0, 'Available units cannot be negative'],
+      max: [100, 'Maximum 100 units allowed'],
+      default: 1
+    },
+    minBookingDays: {
+      type: Number,
+      min: [1, 'Minimum booking days must be at least 1'],
+      max: [365, 'Maximum 365 days allowed'],
+      default: 1
+    },
+    maxBookingDays: {
+      type: Number,
+      min: [1, 'Maximum booking days must be at least 1'],
+      max: [365, 'Maximum 365 days allowed'],
+      default: 30
+    }
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -127,6 +161,7 @@ serviceSchema.index({ propertyType: 1 });
 serviceSchema.index({ 'address.city': 1 });
 serviceSchema.index({ price: 1 });
 serviceSchema.index({ isActive: 1 });
+serviceSchema.index({ 'inventory.availableUnits': 1 });
 
 const Service = mongoose.model<IService>('Service', serviceSchema);
 

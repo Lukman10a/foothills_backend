@@ -14,7 +14,12 @@ import {
   deletePropertyImage,
   getPropertyImages,
   reorderPropertyImages,
-  setPrimaryImage
+  setPrimaryImage,
+  updateInventory,
+  getInventoryStats,
+  checkInventoryAvailability,
+  adjustInventory,
+  bulkUpdateInventory
 } from '../controllers/serviceController';
 import { authenticate, requireProvider } from '../middleware/auth';
 import { validateRequest, validateParams, validateQuery } from '../middleware/validation';
@@ -28,8 +33,11 @@ import {
   calendarQuerySchema,
   availabilityQuerySchema,
   reorderImagesSchema,
-  setPrimaryImageSchema
+  setPrimaryImageSchema,
+  inventoryUpdateSchema,
+  inventoryAdjustmentSchema
 } from '../validations/serviceValidation';
+import { inventoryAvailabilityCheckSchema } from '../validations/bookingValidation';
 import { uploadMultiple } from '../middleware/upload';
 
 const router = Router();
@@ -138,5 +146,42 @@ router.put('/:id/images/reorder', authenticate, validateParams(serviceIdSchema),
  * @access  Private (Service owner or Admin only)
  */
 router.put('/:id/images/primary', authenticate, validateParams(serviceIdSchema), validateRequest(setPrimaryImageSchema), setPrimaryImage);
+
+// Inventory Management Routes
+
+/**
+ * @route   PUT /api/services/:id/inventory
+ * @desc    Update property inventory
+ * @access  Private (Service owner or Admin only)
+ */
+router.put('/:id/inventory', authenticate, validateParams(serviceIdSchema), validateRequest(inventoryUpdateSchema), updateInventory);
+
+/**
+ * @route   GET /api/services/:id/inventory/stats
+ * @desc    Get property inventory statistics
+ * @access  Private (Service owner or Admin only)
+ */
+router.get('/:id/inventory/stats', authenticate, validateParams(serviceIdSchema), getInventoryStats);
+
+/**
+ * @route   POST /api/services/:id/inventory/availability
+ * @desc    Check inventory availability for a date range
+ * @access  Public
+ */
+router.post('/:id/inventory/availability', validateParams(serviceIdSchema), validateRequest(inventoryAvailabilityCheckSchema), checkInventoryAvailability);
+
+/**
+ * @route   PATCH /api/services/:id/inventory/adjust
+ * @desc    Adjust property inventory (admin only)
+ * @access  Private (Admin only)
+ */
+router.patch('/:id/inventory/adjust', authenticate, validateParams(serviceIdSchema), validateRequest(inventoryAdjustmentSchema), adjustInventory);
+
+/**
+ * @route   POST /api/services/inventory/bulk-update
+ * @desc    Bulk update inventory for multiple properties (admin only)
+ * @access  Private (Admin only)
+ */
+router.post('/inventory/bulk-update', authenticate, bulkUpdateInventory);
 
 export default router; 
