@@ -12,6 +12,7 @@
     "prebuild": "npm run clean",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:watch": "jest --watch",
+    "test:db": "node test-connection.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
