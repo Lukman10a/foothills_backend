@@ -4,6 +4,7 @@ import { env } from './environment';
 // Database connection configuration
 const connectDB = async (): Promise<void> => {
   try {
+    // const mongoURI = env.MONGODB_URI;
     const mongoURI = env.MONGODB_URI;
     
     console.log('🔄 Connecting to MongoDB Atlas...');

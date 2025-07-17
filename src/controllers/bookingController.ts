@@ -281,7 +281,7 @@ export const cancelBooking = asyncHandler(async (req: AuthRequest, res: Response
   if (booking.status === 'completed') {
     throw new AppError('Cannot cancel completed booking', 400);
   }
-
+  
   // If booking has inventory, release it
   if (booking.units && booking.units > 0) {
     const { updateInventoryAfterBooking } = await import('../utils/inventoryUtils');
