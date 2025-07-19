@@ -5,11 +5,17 @@ import { Environment } from '../types';
 // Load environment variables first
 dotenv.config();
 
+// Normalize NODE_ENV to lowercase for validation
+const normalizedNodeEnv = process.env['NODE_ENV']?.toLowerCase() || 'development';
+
 // Environment variable validation schema
 const envSchema = Joi.object<Environment>({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
-    .default('development'),
+    .default('development')
+    .messages({
+      'any.only': 'NODE_ENV must be one of: development, production, test'
+    }),
   
   PORT: Joi.number()
     .default(3000),
@@ -45,9 +51,23 @@ const envSchema = Joi.object<Environment>({
 
 // Validate environment variables
 const validateEnv = (): Environment => {
-  const { error, value: envVars } = envSchema.validate(process.env);
+  // Create a normalized environment object
+  const normalizedEnv = {
+    ...process.env,
+    NODE_ENV: normalizedNodeEnv,
+    PORT: process.env['PORT'] ? parseInt(process.env['PORT']) : undefined,
+    RATE_LIMIT_WINDOW_MS: process.env['RATE_LIMIT_WINDOW_MS'] ? parseInt(process.env['RATE_LIMIT_WINDOW_MS']) : undefined,
+    RATE_LIMIT_MAX_REQUESTS: process.env['RATE_LIMIT_MAX_REQUESTS'] ? parseInt(process.env['RATE_LIMIT_MAX_REQUESTS']) : undefined
+  };
+
+  const { error, value: envVars } = envSchema.validate(normalizedEnv);
   
   if (error) {
+    console.error('❌ Environment validation failed:');
+    console.error('Error:', error.message);
+    console.error('Current NODE_ENV:', process.env['NODE_ENV']);
+    console.error('Normalized NODE_ENV:', normalizedNodeEnv);
+    console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('NODE') || key.includes('PORT') || key.includes('MONGO')));
     throw new Error(`Environment validation error: ${error.message}`);
   }
   
