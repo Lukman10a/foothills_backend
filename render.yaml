@@ -3,6 +3,6 @@ services:
     name: foothills-api
     env: node
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci && npm run clean && npm run build
     startCommand: npm start
     healthCheckPath: /api/health 
