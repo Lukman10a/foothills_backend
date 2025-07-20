@@ -533,7 +533,13 @@ export const getAvailableCalendar = async (req: Request, res: Response): Promise
     }
 
     // Get all dates in range
-    const calendar = [];
+    const calendar: Array<{
+      date: string;
+      dayOfWeek: number;
+      dayName: string;
+      isAvailable: boolean;
+      isUnavailable: boolean;
+    }> = [];
     const currentDate = new Date(start);
     
     while (currentDate <= end) {
@@ -622,7 +628,7 @@ export const checkAvailability = async (req: Request, res: Response): Promise<vo
 
     // Check if any dates in the range are unavailable
     const unavailableDates = service.unavailableDates || [];
-    const conflictingDates = [];
+    const conflictingDates: string[] = [];
     
     const currentDate = new Date(checkIn);
     while (currentDate < checkOut) {
@@ -688,7 +694,12 @@ export const uploadPropertyImages = asyncHandler(async (req: AuthRequest, res: R
     throw new AppError('Not authorized to upload images for this property', 403);
   }
   
-  const uploadedImages = [];
+  const uploadedImages: Array<{
+    url: string;
+    filename: string;
+    originalName: string;
+    size: number;
+  }> = [];
   
   try {
     // Process each uploaded file
